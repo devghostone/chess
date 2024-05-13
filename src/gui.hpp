@@ -5,6 +5,7 @@
 #include "raylib.h"
 
 #include <string>
+#include <iostream>
 
 using std::string;
 
@@ -22,10 +23,18 @@ class GuiChessboard{
     Color selectionCell;
     int cellSize;
 
+    bool isSelected = false;
+    bool isCalculated = false;
+
+    Coordinate selectedCoordinate = {0, 0};
+    vector<Coordinate> possibleMoves;
+
     public:
         GuiChessboard(Board& board, GuiPieceRenderer& renderer, Color whiteCell, Color blackCell, Color selectionCell, int screenHeight);
         void RenderBoard();
         void RenderPieces();
+        void RenderSelection();
+        void HandleClick(uint8_t x, uint8_t y);
 };
 
 class GuiPieceRenderer{
@@ -40,7 +49,9 @@ class GuiPieceRenderer{
 };
 
 class GuiInputManager{
+    GuiChessboard* guiChessboard;
+    int boardSize;
     public:
-        GuiInputManager();
-        void ClickOnCell();
+        GuiInputManager(GuiChessboard& board, int boardSize);
+        void Update();
 };

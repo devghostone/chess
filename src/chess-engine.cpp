@@ -1,11 +1,88 @@
 #include "chess-engine.hpp"
 
+uint8_t GetCoordinate(uint8_t x, uint8_t y){
+    return x + (8 * y);
+}
+
+uint8_t GetCoordinate(Coordinate coordinate){
+    return GetCoordinate(coordinate.X, coordinate.Y);
+}
+
 Piece::Piece(PieceType type){
     this->type = type;
 }
 
 bool Piece::IsWhite(){
     return (static_cast<uint8_t>(this->type) & 0b00001000) == 0;
+}
+
+vector<Piece::PieceMovementFormula> Piece::GetPieceMovementFormula(){
+    vector<Piece::PieceMovementFormula> result;
+    switch(type){
+        case PieceType::W_KING:
+        case PieceType::B_KING:
+            result.push_back({-1,1,false});
+            result.push_back({0,1,false});
+            result.push_back({1,1,false});
+            result.push_back({1,0,false});
+            result.push_back({1,-1,false});
+            result.push_back({0,-1,false});
+            result.push_back({-1,-1,false});
+            result.push_back({-1, 0, false});
+            return result;
+        case PieceType::W_BISHOP:
+        case PieceType::B_BISHOP:
+            result.push_back({-1,1,true});
+            result.push_back({1,1,true});
+            result.push_back({1,-1,true});
+            result.push_back({-1,-1,true});
+            return result;
+        case PieceType::W_QUEEN:
+        case PieceType::B_QUEEN:
+            result.push_back({-1,1,true});
+            result.push_back({0,1,true});
+            result.push_back({1,1,true});
+            result.push_back({1,0,true});
+            result.push_back({1,-1,true});
+            result.push_back({0,-1,true});
+            result.push_back({-1,-1,true});
+            result.push_back({-1, 0, true});
+            return result;
+        case PieceType::W_ROOK:
+        case PieceType::B_ROOK:
+            result.push_back({0,1,true});
+            result.push_back({1,0,true});
+            result.push_back({0,-1,true});
+            result.push_back({-1, 0, true});
+            return result;
+        case PieceType::W_PAWN:
+            result.push_back({0,-1,true,2});
+            return result;
+        case PieceType::B_PAWN:
+            result.push_back({0,1,true,2}); 
+            return result;
+        case PieceType::W_KNIGHT:
+        case PieceType::B_KNIGHT:
+            result.push_back({1, 2, false});
+            result.push_back({-1, 2, false});
+            result.push_back({1, -2, false});
+            result.push_back({-1, -2, false});
+            result.push_back({2, 1, false});
+            result.push_back({2, -1, false});
+            result.push_back({-2, 1, false});
+            result.push_back({-2, -1, false});
+            return result;
+        default:
+            result.push_back({-1,1,false});
+            result.push_back({0,1,false});
+            result.push_back({1,1,false});
+            result.push_back({1,0,false});
+            result.push_back({1,-1,false});
+            result.push_back({0,-1,false});
+            result.push_back({-1,-1,false});
+            result.push_back({-1, 0, false});
+            return result;
+    }
 }
 
 Cell::Cell(){
@@ -16,8 +93,8 @@ void Cell::GetPieceOnCell(Piece*& piecePtr){
     piecePtr = this->pieceOnCell.get();
 }
 
-void Cell::GetPieceOnCell(unique_ptr<Piece>*& piecePtr){
-    piecePtr = &(this->pieceOnCell);
+void Cell::GetPieceOnCell(unique_ptr<Piece>& piecePtr){
+    piecePtr = std::move(this->pieceOnCell);
 }
 
 void Cell::SetPieceOnCell(Piece newPieceOnCell){
@@ -83,10 +160,63 @@ Board::Board(){
     }
 }
 
-uint8_t Board::GetCoordinate(uint8_t x, uint8_t y){
-    return x + (8 * y);
-}
-
 Cell* Board::GetCell(uint8_t x, uint8_t y){
     return cells[GetCoordinate(x, y)].get();
+}
+
+Cell* Board::GetCell(Coordinate coordinate){
+    return GetCell(coordinate.X, coordinate.Y);
+}
+
+bool Board::IsCellOccupied(Coordinate coordinate){
+    Piece* potentialPiece;
+    GetCell(coordinate)->GetPieceOnCell(potentialPiece);
+    return potentialPiece != nullptr;
+}
+
+void FormulaApplier(Board& board, vector<Coordinate>& allPossibleMoves, Coordinate& coordinate, Piece::PieceMovementFormula& formula, bool isWhite, int counter = 0){
+    uint8_t X = static_cast<uint8_t>(coordinate.X + formula.x_movement);
+    uint8_t Y = static_cast<uint8_t>(coordinate.Y + formula.y_movement);
+    if(X < 0 || X > 7 || Y < 0 || Y > 7){
+        return;
+    }
+    if(board.IsCellOccupied(Coordinate{X, Y})){
+        Piece* piecePtr;
+        board.GetCell(X, Y)->GetPieceOnCell(piecePtr);
+        if(piecePtr->IsWhite() == isWhite){
+            return;
+        }
+        Coordinate newCoords = {X, Y};
+        allPossibleMoves.push_back(newCoords);
+        return;
+    }
+    Coordinate newCoords = {X, Y};
+    allPossibleMoves.push_back(newCoords);
+    if(formula.continuous){
+        if(formula.max_continuous != 0){
+            if(!formula.max_continuous < counter){
+                return;
+            }
+            counter++;
+        }
+        // recursively apply until we reach the end
+        FormulaApplier(board, allPossibleMoves, newCoords, formula, isWhite, counter);
+    }
+}
+
+vector<Coordinate> Board::GetPossibleMoves(Cell*& cell, Coordinate coordinate){
+    vector<Coordinate> allPossibleMoves;
+    Piece* piece;
+    cell->GetPieceOnCell(piece);
+    for(Piece::PieceMovementFormula formula: piece->GetPieceMovementFormula()){
+        FormulaApplier(*this, allPossibleMoves, coordinate, formula, piece->IsWhite());
+    }
+    //allPossibleMoves.push_back({1, 2});
+    return allPossibleMoves;
+}
+
+void Board::MovePiece(Cell*& fromCell, Cell*& toCell){
+    unique_ptr<Piece> targetPiece;
+    fromCell->GetPieceOnCell(targetPiece);
+    toCell->SetPieceOnCell(std::move(targetPiece));
 }
