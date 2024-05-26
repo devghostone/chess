@@ -44,8 +44,8 @@ class GuiPieceRenderer{
 
     public:
         GuiPieceRenderer(array<array<Vector2,6>,2> imageOffsetVectors, std::string chessPieceSvgPath, int chessPieceImageWidth, int chessPieceImageHeight);
-        void RenderPiece(Piece*& piece, Rectangle targetArea);
-        Vector2 GetPieceOffset(Piece*& piece);
+        void RenderPiece(Piece piece, Rectangle targetArea);
+        Vector2 GetPieceOffset(Piece& piece);
 };
 
 class GuiInputManager{

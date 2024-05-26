@@ -1,96 +1,97 @@
 #pragma once
 
+#include <string>
 #include <memory>
 #include <array>
 #include <vector>
 #include <cstdint>
 #include <algorithm>
+#include <map>
+#include <cctype>
+#include <bitset>
 
-using std::shared_ptr, std::make_shared, std::unique_ptr, std::make_unique, std::array, std::vector, std::uint8_t;
+using std::shared_ptr, std::make_shared, std::unique_ptr, std::make_unique, std::array, std::vector, std::uint8_t, std::string, std::bitset;
 
 /// @brief all the different possible piece type
-enum class PieceType: uint8_t{
-    NO_PIECE,
-    W_KING = 1, W_QUEEN, W_BISHOP, W_KNIGHT, W_ROOK, W_PAWN,
-    B_KING = 9, B_QUEEN, B_BISHOP, B_KNIGHT, B_ROOK, B_PAWN
+enum class Piece: uint8_t{
+    NO_PIECE = 0,
+    KING = 1,
+    QUEEN = 2,
+    BISHOP = 3,
+    KNIGHT = 4,
+    ROOK = 5,
+    PAWN = 6,
+    FWHITE = 8,
+    FBLACK = 16
 };
 
-class Piece;
-class Cell;
-class Board;
+Piece GetPieceFaction(uint8_t piece);
+Piece GetPieceType(uint8_t piece);
 
 struct Coordinate{
     uint8_t X: 4;
     uint8_t Y: 4;
-
-    bool operator==(const Coordinate& other) const {
+    bool operator==(const Coordinate& other){
         return (X == other.X) && (Y == other.Y);
+    }
+    Coordinate operator+(const Coordinate& other){
+        return Coordinate{static_cast<uint8_t>(X + other.X), static_cast<uint8_t>(Y + other.Y)};
+    }
+
+    Coordinate operator-(const Coordinate& other){
+        return Coordinate{static_cast<uint8_t>(X - other.X), static_cast<uint8_t>(Y - other.Y)};
     }
 };
 
-uint8_t GetCoordinate(uint8_t x, uint8_t y);
-uint8_t GetCoordinate(Coordinate coordinate);
+uint8_t GetArrayCoordinate(Coordinate coord);
+uint8_t GetArrayCoordinate(uint8_t X, uint8_t Y);
 
-/// @brief the piece class emcompassing all the methods and functionalities
-class Piece{
-    public:
-        struct PieceMovementFormula{
-            int8_t x_movement: 3;
-            int8_t y_movement: 3;
-            bool continuous;
-            uint8_t max_continuous: 3;
-        };
-
-        PieceType type;
-        array<vector<Piece::PieceMovementFormula>,7> result;
-
-        Piece(PieceType type);
-
-        ///@brief check whether if a piece is white or black
-        ///@return true -> White Piece, false -> Black Piece
-        bool IsWhite();
-
-        vector<PieceMovementFormula> GetPieceMovementFormula();
-
-};
-
-/// @brief the cell class that is going to house piece and be inside a board
-class Cell{
-    unique_ptr<Piece> pieceOnCell;
-
-    public:
-        Cell();
-
-        /// @brief get the current piece on the cell
-        /// @return pointer to the current piece
-        void GetPieceOnCell(Piece*& piecePtr);
-        
-        /// @brief get the unique ptr to be moved
-        /// @return 
-        void GetPieceOnCell(unique_ptr<Piece>& piecePtr);
-
-        /// @brief new piece
-        /// @param newPieceOnCell 
-        void SetPieceOnCell(Piece newPieceOnCell);
-
-        /// @brief release the previous reference to the piece on this cell and replace it with a new one
-        /// @param pieceOnCell current piece on this cell
-        void SetPieceOnCell(unique_ptr<Piece> newPieceOnCell);
-};
+void GenerateMoves(Piece piece, Coordinate coord);
+void GenerateLegalMoves(Piece piece, Coordinate coord);
 
 class Board{
+
+    int legalMovesCount = 0;
+
+    void CalculateLegalMovesCount();
+    void UpdateAttackBoard();
+    void CheckGameState();
+
+    void clearAttackBoard();
+    void clearXrayBoard();
+    
+    void FormulaRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord, int movementFormulaX, int movementFormulaY);
+     // move directly to a cell
+    void DirectMoveFormula(vector<Coordinate>& pseudoLegalMovelist, Coordinate hostCoord, Coordinate coord, int movementFormulaX, int movementFormulaY);
+    
+    void HorizontalRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord);
+    void VerticalRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord);
+    void DiagonalRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord);
+    void AntiDiagonalRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord);
+    void SurroundingMove(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord);
+    void KnightMove(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord);
+
+    uint8_t FindAPiece(Piece type, Piece faction);
+
     public:
-
-        array<shared_ptr<Cell>, 64> cells;
-
+        array<uint8_t, 64> Cells;
+        array<bitset<64>, 2> attackBoard; // records which cells are being attacked or in sight of a piece
+        array<bitset<64>, 2> xrayBoard; // records which cells are being x-rayed in relation to the king
+        
         Board();
+        vector<Coordinate> GeneratePseudoLegalMoves(Coordinate coord);
+        vector<Coordinate> GenerateLegalMoves(Coordinate coord);
 
-        Cell* GetCell(uint8_t x, uint8_t y);
-        Cell* GetCell(Coordinate coordinate);
+        /// @brief check whether if a cell is occupied or not
+        /// @param coord 
+        /// @return 
+        bool IsCellOccupied(Coordinate coord);
+        
+        void MovePiece(Coordinate fromCoord, Coordinate toCoord);
+        void MakeMove(Coordinate fromCoord, Coordinate toCoord);
+};
 
-        bool IsCellOccupied(Coordinate coordinate);
-
-        vector<Coordinate> GetPossibleMoves(Cell*& cell, Coordinate coordinate);
-
-        void MovePiece(Cell*& fromCell, Cell*& toCell);
+class FenLoader{
+    public:
+        static void Load(array<uint8_t, 64>& cells, string config);
 };

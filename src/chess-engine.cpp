@@ -1,222 +1,369 @@
 #include "chess-engine.hpp"
 
-uint8_t GetCoordinate(uint8_t x, uint8_t y){
-    return x + (8 * y);
+uint8_t GetArrayCoordinate(uint8_t X, uint8_t Y){
+    return X + (8 * Y);
 }
 
-uint8_t GetCoordinate(Coordinate coordinate){
-    return GetCoordinate(coordinate.X, coordinate.Y);
+uint8_t GetArrayCoordinate(Coordinate coord){
+    return GetArrayCoordinate(coord.X, coord.Y);
 }
 
-Piece::Piece(PieceType type){
-    this->type = type;
+uint8_t cast_to_uint8_t(Piece piece){
+    return static_cast<uint8_t>(piece);
 }
 
-bool Piece::IsWhite(){
-    return (static_cast<uint8_t>(this->type) & 0b00001000) == 0;
+uint8_t SetPiece(Piece faction, Piece type){
+    return cast_to_uint8_t(faction) | cast_to_uint8_t(type);
 }
 
-vector<Piece::PieceMovementFormula> Piece::GetPieceMovementFormula(){
-    vector<Piece::PieceMovementFormula> result;
-    switch(type){
-        case PieceType::W_KING:
-        case PieceType::B_KING:
-            result.push_back({-1,1,false});
-            result.push_back({0,1,false});
-            result.push_back({1,1,false});
-            result.push_back({1,0,false});
-            result.push_back({1,-1,false});
-            result.push_back({0,-1,false});
-            result.push_back({-1,-1,false});
-            result.push_back({-1, 0, false});
-            return result;
-        case PieceType::W_BISHOP:
-        case PieceType::B_BISHOP:
-            result.push_back({-1,1,true});
-            result.push_back({1,1,true});
-            result.push_back({1,-1,true});
-            result.push_back({-1,-1,true});
-            return result;
-        case PieceType::W_QUEEN:
-        case PieceType::B_QUEEN:
-            result.push_back({-1,1,true});
-            result.push_back({0,1,true});
-            result.push_back({1,1,true});
-            result.push_back({1,0,true});
-            result.push_back({1,-1,true});
-            result.push_back({0,-1,true});
-            result.push_back({-1,-1,true});
-            result.push_back({-1, 0, true});
-            return result;
-        case PieceType::W_ROOK:
-        case PieceType::B_ROOK:
-            result.push_back({0,1,true});
-            result.push_back({1,0,true});
-            result.push_back({0,-1,true});
-            result.push_back({-1, 0, true});
-            return result;
-        case PieceType::W_PAWN:
-            result.push_back({0,-1,true,2});
-            return result;
-        case PieceType::B_PAWN:
-            result.push_back({0,1,true,2}); 
-            return result;
-        case PieceType::W_KNIGHT:
-        case PieceType::B_KNIGHT:
-            result.push_back({1, 2, false});
-            result.push_back({-1, 2, false});
-            result.push_back({1, -2, false});
-            result.push_back({-1, -2, false});
-            result.push_back({2, 1, false});
-            result.push_back({2, -1, false});
-            result.push_back({-2, 1, false});
-            result.push_back({-2, -1, false});
-            return result;
-        default:
-            result.push_back({-1,1,false});
-            result.push_back({0,1,false});
-            result.push_back({1,1,false});
-            result.push_back({1,0,false});
-            result.push_back({1,-1,false});
-            result.push_back({0,-1,false});
-            result.push_back({-1,-1,false});
-            result.push_back({-1, 0, false});
-            return result;
+Piece GetPieceFaction(uint8_t piece){
+
+    Piece value = static_cast<Piece>(piece & 0b00011000);
+    return value;
+}
+
+bool IsCellEmpty(uint8_t cell){
+    return cell == 0;
+}
+
+Piece GetPieceType(uint8_t piece){
+    return static_cast<Piece>(piece & 0b00000111);
+}
+
+void Board::UpdateAttackBoard(){
+    for(uint8_t i = 0; i < 8; i++){
+        for(uint8_t j = 0; j < 8; j++){
+            if(IsCellOccupied(Coordinate{i, j})){
+                Board::GeneratePseudoLegalMoves(Coordinate{i, j});
+            }
+        }
     }
 }
 
-Cell::Cell(){
-    this->pieceOnCell = nullptr;
+void Board::CalculateLegalMovesCount(){
+    legalMovesCount = 0;
+    for(uint8_t i = 0; i < 8; i++){
+        for(uint8_t j = 0; j < 8; j++){
+            if(IsCellOccupied(Coordinate{i, j})){
+                legalMovesCount += Board::GeneratePseudoLegalMoves(Coordinate{i, j}).size();
+            }
+        }
+    }
 }
 
-void Cell::GetPieceOnCell(Piece*& piecePtr){
-    piecePtr = this->pieceOnCell.get();
+void Board::clearAttackBoard(){
+    attackBoard[0].reset();
+    attackBoard[1].reset();
+} 
+
+void Board::clearXrayBoard(){
+    xrayBoard[0].reset();
+    xrayBoard[1].reset();
 }
 
-void Cell::GetPieceOnCell(unique_ptr<Piece>& piecePtr){
-    piecePtr = std::move(this->pieceOnCell);
-}
-
-void Cell::SetPieceOnCell(Piece newPieceOnCell){
-    this->pieceOnCell = make_unique<Piece>(newPieceOnCell);
-}
-
-void Cell::SetPieceOnCell(unique_ptr<Piece> newPieceOnCell){
-    this->pieceOnCell = std::move(newPieceOnCell);
+void Board::CheckGameState(){
+    // task : get which side this person is on
+    if(legalMovesCount == 0){
+        // if checked -> checkmate
+        // if not checked -> draw
+    }else{
+        // if checked -> mention check
+        // if not -> normal
+    }
 }
 
 Board::Board(){
+    for(int i = 0; i < 64; i++){
+        Cells[i] = cast_to_uint8_t(Piece::NO_PIECE);
+    }
+    FenLoader::Load(Cells, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    attackBoard = array<bitset<64>, 2>();
+    attackBoard[0] = bitset<64>(0);
+    attackBoard[1] = bitset<64>(0);
+    UpdateAttackBoard();
+    CalculateLegalMovesCount();
+}
+
+void Board::FormulaRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord, int movementFormulaX, int movementFormulaY){
+    Coordinate nextCoordinate = coord;
+    nextCoordinate.X += movementFormulaX;
+    nextCoordinate.Y += movementFormulaY;
+
+    if(nextCoordinate.X < 0 || nextCoordinate.X > 7 || nextCoordinate.Y < 0 || nextCoordinate.Y > 7){
+        return;
+    }
+
+    if(IsCellOccupied(nextCoordinate)){
+        if(
+            GetPieceFaction(Cells[GetArrayCoordinate(nextCoordinate)]) != 
+            GetPieceFaction(Cells[GetArrayCoordinate(hostCoord)])
+        ){
+            pseudoLegalMoveList.push_back(nextCoordinate);
+        }
+    }else{
+        pseudoLegalMoveList.push_back(nextCoordinate);
+    }
+
+    if(!IsCellOccupied(nextCoordinate)){
+        FormulaRecursion(pseudoLegalMoveList, hostCoord, nextCoordinate, movementFormulaX, movementFormulaY);
+    }
+
+    attackBoard[GetPieceFaction(Cells[GetArrayCoordinate(hostCoord)]) != Piece::FWHITE].set(GetArrayCoordinate(nextCoordinate));
+}
+
+void Board::DirectMoveFormula(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord, int movementFormulaX, int movementFormulaY){
+    Coordinate targetCoord = coord;
+    targetCoord.X += movementFormulaX;
+    targetCoord.Y += movementFormulaY;
+
+    if(targetCoord.X < 0 || targetCoord.X > 7 || targetCoord.Y < 0 || targetCoord.Y > 7){
+        return;
+    }
+    attackBoard[GetPieceFaction(Cells[GetArrayCoordinate(hostCoord)]) != Piece::FWHITE].set(GetArrayCoordinate(targetCoord));
+    if(IsCellOccupied(targetCoord)){
+        if(
+            GetPieceFaction(Cells[GetArrayCoordinate(targetCoord)]) != 
+            GetPieceFaction(Cells[GetArrayCoordinate(hostCoord)])
+        ){
+            pseudoLegalMoveList.push_back(targetCoord);
+        }
+    }else{
+        pseudoLegalMoveList.push_back(targetCoord);
+    }
+}
+void Board::HorizontalRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord){
+    FormulaRecursion(pseudoLegalMoveList, hostCoord, coord, -1, 0);
+    FormulaRecursion(pseudoLegalMoveList, hostCoord, coord, 1, 0);
+}
+void Board::VerticalRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord){
+    FormulaRecursion(pseudoLegalMoveList, hostCoord, coord, 0, 1);
+    FormulaRecursion(pseudoLegalMoveList, hostCoord, coord, 0, -1);
+}
+void Board::DiagonalRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord){
+    FormulaRecursion(pseudoLegalMoveList, hostCoord, coord, 1, 1);
+    FormulaRecursion(pseudoLegalMoveList, hostCoord, coord, -1, -1);
+}
+void Board::AntiDiagonalRecursion(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord){
+    FormulaRecursion(pseudoLegalMoveList, hostCoord, coord, 1, -1);
+    FormulaRecursion(pseudoLegalMoveList, hostCoord, coord, -1, 1);
+}
+
+void Board::SurroundingMove(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord){
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 1, -1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 1, 0);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 1, 1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 0, 1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, -1, 1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, -1, 0);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, -1, -1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 0, -1);
+}
+
+void Board::KnightMove(vector<Coordinate>& pseudoLegalMoveList, Coordinate hostCoord, Coordinate coord){
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 1, 2);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 2, 1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 2, -1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, 1, -2);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, -1, -2);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, -2, -1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, -2, 1);
+    DirectMoveFormula(pseudoLegalMoveList, hostCoord, coord, -1, 2);
+}
+
+uint8_t Board::FindAPiece(Piece type, Piece faction){
     for(uint8_t x = 0; x < 8; x++){
         for(uint8_t y = 0; y < 8; y++){
-            this->cells[GetCoordinate(x, y)] = make_shared<Cell>();
+            uint8_t current_index = GetArrayCoordinate(Coordinate{x, y});
+            if(GetPieceType(Cells[current_index]) == type && GetPieceFaction(Cells[current_index]) == faction)
+                return current_index;
         }
     }
-
-    this->cells[GetCoordinate(4, 7)]->SetPieceOnCell(make_unique<Piece>(PieceType::W_KING));
-    this->cells[GetCoordinate(3, 7)]->SetPieceOnCell(make_unique<Piece>(PieceType::W_QUEEN));
-
-    this->cells[GetCoordinate(4, 0)]->SetPieceOnCell(make_unique<Piece>(PieceType::B_KING));
-    this->cells[GetCoordinate(3, 0)]->SetPieceOnCell(make_unique<Piece>(PieceType::B_QUEEN));
-
-    this->cells[GetCoordinate(0, 7)]->SetPieceOnCell(make_unique<Piece>(PieceType::W_ROOK));
-    this->cells[GetCoordinate(7, 7)]->SetPieceOnCell(make_unique<Piece>(PieceType::W_ROOK));
-
-    this->cells[GetCoordinate(0, 0)]->SetPieceOnCell(make_unique<Piece>(PieceType::B_ROOK));
-    this->cells[GetCoordinate(7, 0)]->SetPieceOnCell(make_unique<Piece>(PieceType::B_ROOK));
-
-    this->cells[GetCoordinate(1, 7)]->SetPieceOnCell(make_unique<Piece>(PieceType::W_KNIGHT));
-    this->cells[GetCoordinate(6, 7)]->SetPieceOnCell(make_unique<Piece>(PieceType::W_KNIGHT));
-
-    this->cells[GetCoordinate(1, 0)]->SetPieceOnCell(make_unique<Piece>(PieceType::B_KNIGHT));
-    this->cells[GetCoordinate(6, 0)]->SetPieceOnCell(make_unique<Piece>(PieceType::B_KNIGHT));
-
-    this->cells[GetCoordinate(2, 7)]->SetPieceOnCell(make_unique<Piece>(PieceType::W_BISHOP));
-    this->cells[GetCoordinate(5, 7)]->SetPieceOnCell(make_unique<Piece>(PieceType::W_BISHOP));
-
-    this->cells[GetCoordinate(2, 0)]->SetPieceOnCell(make_unique<Piece>(PieceType::B_BISHOP));
-    this->cells[GetCoordinate(5, 0)]->SetPieceOnCell(make_unique<Piece>(PieceType::B_BISHOP));
-    /*
-    white_pieces.emplace_back(cast_to_piece(make_shared<King>(King(cells[4][7], Faction::WHITE_FACTION))));
-    white_pieces.emplace_back(cast_to_piece(make_shared<Queen>(Queen(cells[3][7], Faction::WHITE_FACTION))));
-    white_pieces.emplace_back(cast_to_piece(make_shared<Rook>(Rook(cells[0][7], Faction::WHITE_FACTION))));
-    white_pieces.emplace_back(cast_to_piece(make_shared<Rook>(Rook(cells[7][7], Faction::WHITE_FACTION))));
-    white_pieces.emplace_back(cast_to_piece(make_shared<Knight>(Knight(cells[1][7], Faction::WHITE_FACTION))));
-    white_pieces.emplace_back(cast_to_piece(make_shared<Knight>(Knight(cells[6][7], Faction::WHITE_FACTION))));
-    white_pieces.emplace_back(cast_to_piece(make_shared<Bishop>(Bishop(cells[2][7], Faction::WHITE_FACTION))));
-    white_pieces.emplace_back(cast_to_piece(make_shared<Bishop>(Bishop(cells[5][7], Faction::WHITE_FACTION))));
-
-    black_pieces.emplace_back(cast_to_piece(make_shared<King>(King(cells[4][0], Faction::BLACK_FACTION))));
-    black_pieces.emplace_back(cast_to_piece(make_shared<Queen>(Queen(cells[3][0], Faction::BLACK_FACTION))));
-    black_pieces.emplace_back(cast_to_piece(make_shared<Rook>(Rook(cells[0][0], Faction::BLACK_FACTION))));
-    black_pieces.emplace_back(cast_to_piece(make_shared<Rook>(Rook(cells[7][0], Faction::BLACK_FACTION))));
-    black_pieces.emplace_back(cast_to_piece(make_shared<Knight>(Knight(cells[1][0], Faction::BLACK_FACTION))));
-    black_pieces.emplace_back(cast_to_piece(make_shared<Knight>(Knight(cells[6][0], Faction::BLACK_FACTION))));
-    black_pieces.emplace_back(cast_to_piece(make_shared<Bishop>(Bishop(cells[2][0], Faction::BLACK_FACTION))));
-    black_pieces.emplace_back(cast_to_piece(make_shared<Bishop>(Bishop(cells[5][0], Faction::BLACK_FACTION))));
-    */
-    for(uint8_t x = 0; x < 8; x++){
-        this->cells[GetCoordinate(x, 6)]->SetPieceOnCell(Piece(PieceType::W_PAWN));
-        this->cells[GetCoordinate(x, 1)]->SetPieceOnCell(Piece(PieceType::B_PAWN));
-    }
+    return 64;
 }
 
-Cell* Board::GetCell(uint8_t x, uint8_t y){
-    return cells[GetCoordinate(x, y)].get();
-}
+vector<Coordinate> Board::GeneratePseudoLegalMoves(Coordinate coord){
+    
+    vector<Coordinate> pseudoLegalMovesList;
+    Piece pieceType = GetPieceType(Cells[GetArrayCoordinate(coord)]);
+    Piece pieceFaction = GetPieceFaction(Cells[GetArrayCoordinate(coord)]);
+    switch(pieceType){
+        //depending on the type of cell on the particular coordinate do different action
+        case Piece::KING:
+            SurroundingMove(pseudoLegalMovesList, coord, coord);
+            break;
+        case Piece::QUEEN:
+            DiagonalRecursion(pseudoLegalMovesList, coord, coord);
+            AntiDiagonalRecursion(pseudoLegalMovesList ,coord, coord);
+            HorizontalRecursion(pseudoLegalMovesList, coord, coord);
+            VerticalRecursion(pseudoLegalMovesList, coord, coord);
+            break;
+        case Piece::BISHOP:
+            DiagonalRecursion(pseudoLegalMovesList, coord, coord);
+            AntiDiagonalRecursion(pseudoLegalMovesList, coord, coord);
+            break;
+        case Piece::KNIGHT:
+            KnightMove(pseudoLegalMovesList, coord, coord);
+            break;
+        case Piece::ROOK:
+            HorizontalRecursion(pseudoLegalMovesList, coord, coord);
+            VerticalRecursion(pseudoLegalMovesList, coord, coord);
+            break;
+        case Piece::PAWN:
+            if(pieceFaction == Piece::FWHITE){
+                bool isFirstMove = coord.Y == 1;
+                //check if the coord in front of it is occupied or not
+                // since cell is set as a uint8_t anything other than 0 becomes a "piece"
+                // first we will check whether it can capture or not
+                Coordinate leftCoordinate = Coordinate{static_cast<uint8_t>(coord.X - 1), static_cast<uint8_t>(coord.Y + 1)};
+                if(Cells[GetArrayCoordinate(leftCoordinate)] && !(leftCoordinate.X < 0)){
+                    Piece p = GetPieceFaction(Cells[GetArrayCoordinate(leftCoordinate)]);
+                    if(p != pieceFaction){
+                        pseudoLegalMovesList.push_back(leftCoordinate);
+                    }
+                }
 
-Cell* Board::GetCell(Coordinate coordinate){
-    return GetCell(coordinate.X, coordinate.Y);
-}
+                if(!(leftCoordinate.X < 0)){
+                    attackBoard[0].set(GetArrayCoordinate(leftCoordinate));
+                }
 
-bool Board::IsCellOccupied(Coordinate coordinate){
-    Piece* potentialPiece;
-    GetCell(coordinate)->GetPieceOnCell(potentialPiece);
-    return potentialPiece != nullptr;
-}
+                Coordinate rightCoordinate = Coordinate{static_cast<uint8_t>(coord.X + 1), static_cast<uint8_t>(coord.Y + 1)};
+                if(Cells[GetArrayCoordinate(rightCoordinate)] && !(rightCoordinate.X > 7)){
+                    Piece p = GetPieceFaction(Cells[GetArrayCoordinate(rightCoordinate)]);
+                    if(p != pieceFaction){
+                        pseudoLegalMovesList.push_back(rightCoordinate);
+                    }
+                }
 
-void FormulaApplier(Board& board, vector<Coordinate>& allPossibleMoves, Coordinate& coordinate, Piece::PieceMovementFormula& formula, bool isWhite, int counter = 0){
-    uint8_t X = static_cast<uint8_t>(coordinate.X + formula.x_movement);
-    uint8_t Y = static_cast<uint8_t>(coordinate.Y + formula.y_movement);
-    if(X < 0 || X > 7 || Y < 0 || Y > 7){
-        return;
-    }
-    if(board.IsCellOccupied(Coordinate{X, Y})){
-        Piece* piecePtr;
-        board.GetCell(X, Y)->GetPieceOnCell(piecePtr);
-        if(piecePtr->IsWhite() == isWhite){
-            return;
-        }
-        Coordinate newCoords = {X, Y};
-        allPossibleMoves.push_back(newCoords);
-        return;
-    }
-    Coordinate newCoords = {X, Y};
-    allPossibleMoves.push_back(newCoords);
-    if(formula.continuous){
-        if(formula.max_continuous != 0){
-            if(!formula.max_continuous < counter){
-                return;
+                if(!(rightCoordinate.X > 7)){
+                    attackBoard[0].set(GetArrayCoordinate(rightCoordinate));
+                }
+
+                if(Cells[GetArrayCoordinate(coord.X, static_cast<uint8_t>(coord.Y + 1))] != 0){
+                    break;
+                }
+                pseudoLegalMovesList.push_back(Coordinate{coord.X, static_cast<uint8_t>(coord.Y + 1)});
+
+                if(Cells[GetArrayCoordinate(coord.X, coord.Y + 2)] || !isFirstMove){
+                    break;
+                }
+                pseudoLegalMovesList.push_back(Coordinate{coord.X, static_cast<uint8_t>(coord.Y + 2)});
+
+                break;
             }
-            counter++;
+            if(pieceFaction == Piece::FBLACK){
+                bool isFirstMove = coord.Y == 6;
+                //check if the coord in front of it is occupied or not
+                // since cell is set as a uint8_t anything other than 0 becomes a "piece"
+                // first we will check whether it can capture or not
+                Coordinate leftCoordinate = Coordinate{static_cast<uint8_t>(coord.X - 1), static_cast<uint8_t>(coord.Y - 1)};
+                if(Cells[GetArrayCoordinate(leftCoordinate)] && !(leftCoordinate.X < 0)){
+                    Piece p = GetPieceFaction(Cells[GetArrayCoordinate(leftCoordinate)]);
+                    if(p != pieceFaction){
+                        pseudoLegalMovesList.push_back(leftCoordinate);
+                    }
+                    //attackBoard[1].set(GetArrayCoordinate(leftCoordinate));
+                }
+                if(!(leftCoordinate.X < 0)){
+                    attackBoard[1].set(GetArrayCoordinate(leftCoordinate));
+                }
+
+                Coordinate rightCoordinate = Coordinate{static_cast<uint8_t>(coord.X + 1), static_cast<uint8_t>(coord.Y - 1)};
+                if(Cells[GetArrayCoordinate(rightCoordinate)] && !(rightCoordinate.X > 7)){
+                    Piece p = GetPieceFaction(Cells[GetArrayCoordinate(rightCoordinate)]);
+                    if(p != pieceFaction){
+                        pseudoLegalMovesList.push_back(rightCoordinate);
+                    }
+                }
+                if(!(rightCoordinate.X > 7)){
+                    attackBoard[1].set(GetArrayCoordinate(rightCoordinate));
+                }
+
+                if(Cells[GetArrayCoordinate(coord.X, static_cast<uint8_t>(coord.Y - 1))] != 0){
+                    break;
+                }
+                pseudoLegalMovesList.push_back(Coordinate{coord.X, static_cast<uint8_t>(coord.Y - 1)});
+
+                if(Cells[GetArrayCoordinate(coord.X, coord.Y - 2)] || !isFirstMove){
+                    break;
+                }
+                pseudoLegalMovesList.push_back(Coordinate{coord.X, static_cast<uint8_t>(coord.Y - 2)});
+
+                break;
+            }
+    }
+    return pseudoLegalMovesList;
+}
+
+// foreach pseudo move we will check whether if king would be checked after the move is made
+// if yes, the move is not allowed
+// if no, the move is allowed
+vector<Coordinate> Board::GenerateLegalMoves(Coordinate coord){
+    array<uint8_t, 64> originalCells = Cells;
+    array<bitset<64>, 2> originalAttackBoard;
+    originalAttackBoard[0] = attackBoard[0];
+    originalAttackBoard[1] = attackBoard[1]; 
+    Piece pieceFaction = GetPieceFaction(Cells[GetArrayCoordinate(coord)]);
+    std::vector<Coordinate> PseudoLegalCoordinates = GeneratePseudoLegalMoves(coord);
+    std::vector<Coordinate> LegalCoordinates;
+    for(int i = 0; i < PseudoLegalCoordinates.size(); i++){
+        
+        MovePiece(coord, PseudoLegalCoordinates[i]);
+        uint8_t kingIndex = FindAPiece(Piece::KING, pieceFaction);
+        if(!attackBoard[pieceFaction == Piece::FWHITE? 1: 0].test(kingIndex)){
+            LegalCoordinates.push_back(PseudoLegalCoordinates[i]);
         }
-        // recursively apply until we reach the end
-        FormulaApplier(board, allPossibleMoves, newCoords, formula, isWhite, counter);
+        attackBoard = originalAttackBoard;
+        Cells = originalCells;
+    }
+    return LegalCoordinates;
+}
+
+void FenLoader::Load(array<uint8_t, 64>& cells, string config){
+    std::map<char, uint8_t> pieceTypeFromSymbol = {
+        {'k', cast_to_uint8_t(Piece::KING)},
+        {'q', cast_to_uint8_t(Piece::QUEEN)},
+        {'b', cast_to_uint8_t(Piece::BISHOP)},
+        {'n', cast_to_uint8_t(Piece::KNIGHT)},
+        {'r', cast_to_uint8_t(Piece::ROOK)},
+        {'p', cast_to_uint8_t(Piece::PAWN)}
+    };
+
+    int file = 0, rank = 7;
+    for(char symbol: config){
+        if(symbol == '/'){
+            file = 0;
+            rank --;
+        }else{
+            if(isdigit(symbol)){
+                file += symbol - '0';
+            }else{
+                uint8_t pieceColour = static_cast<uint8_t>(isupper(symbol)? Piece::FWHITE : Piece::FBLACK);
+                uint8_t pieceType = pieceTypeFromSymbol[tolower(symbol)];
+                cells[rank * 8 + file] = pieceType | pieceColour;
+                file++;
+            }
+        }
     }
 }
 
-vector<Coordinate> Board::GetPossibleMoves(Cell*& cell, Coordinate coordinate){
-    vector<Coordinate> allPossibleMoves;
-    Piece* piece;
-    cell->GetPieceOnCell(piece);
-    for(Piece::PieceMovementFormula formula: piece->GetPieceMovementFormula()){
-        FormulaApplier(*this, allPossibleMoves, coordinate, formula, piece->IsWhite());
-    }
-    //allPossibleMoves.push_back({1, 2});
-    return allPossibleMoves;
+bool Board::IsCellOccupied(Coordinate coord){
+    return Cells[GetArrayCoordinate(coord)] != 0; //something is there
 }
 
-void Board::MovePiece(Cell*& fromCell, Cell*& toCell){
-    unique_ptr<Piece> targetPiece;
-    fromCell->GetPieceOnCell(targetPiece);
-    toCell->SetPieceOnCell(std::move(targetPiece));
+void Board::MakeMove(Coordinate fromCoord, Coordinate toCoord){
+    Board::MovePiece(fromCoord, toCoord);
+    Board::CalculateLegalMovesCount();
+    CheckGameState();
+}
+
+void Board::MovePiece(Coordinate fromCoord, Coordinate toCoord){
+    //vector<Coordinate> allLegalMoves = GenerateLegalMoves(fromCoord);
+    //auto it = std::find(allLegalMoves.begin(), allLegalMoves.end(), toCoord);
+    //if(it != allLegalMoves.end()){
+        // valid move
+        clearAttackBoard();
+        Cells[GetArrayCoordinate(toCoord)] = Cells[GetArrayCoordinate(fromCoord)];
+        Cells[GetArrayCoordinate(fromCoord)] = 0;
+        UpdateAttackBoard();
+    //}
 }

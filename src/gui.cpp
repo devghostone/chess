@@ -12,19 +12,16 @@ GuiChessboard::GuiChessboard(Board &board, GuiPieceRenderer &renderer, Color whi
 
 void GuiChessboard::RenderBoard()
 {
-    bool isWhite = true;
-    for (int i = 0; i < 8; i++)
+    for (uint8_t file = 0; file < 8; file++)
     {
-        isWhite = !isWhite;
-        for (int j = 0; j < 8; j++)
+        for (uint8_t rank = 0; rank < 8; rank++)
         {
-            DrawRectangle(i * cellSize, j * cellSize, cellSize, cellSize, isWhite ? whiteCell : blackCell);
-            isWhite = !isWhite;
+            DrawRectangle(file * cellSize, (7 - rank) * cellSize, cellSize, cellSize, (file + rank) % 2 == 0 ? whiteCell : blackCell);
         }
     }
     if (isSelected)
     {
-        DrawRectangle(selectedCoordinate.X * cellSize, selectedCoordinate.Y * cellSize, cellSize, cellSize, selectionCell);
+        DrawRectangle(selectedCoordinate.X * cellSize, (7 - selectedCoordinate.Y) * cellSize, cellSize, cellSize, selectionCell);
         if (isCalculated)
         {
             // we will calculate the move set only once
@@ -33,10 +30,10 @@ void GuiChessboard::RenderBoard()
         // Get all possible moves and draw hints
         if (targetBoard->IsCellOccupied(selectedCoordinate))
         {
-            Cell *cell = targetBoard->GetCell(selectedCoordinate);
-            Piece *piece = nullptr;
-            cell->GetPieceOnCell(piece);
-            possibleMoves = targetBoard->GetPossibleMoves(cell, selectedCoordinate);
+            //Cell *cell = targetBoard->GetCell(selectedCoordinate);
+            //Piece *piece = nullptr;
+            //cell->GetPieceOnCell(piece);
+            possibleMoves = targetBoard->GenerateLegalMoves(selectedCoordinate);
         }
         else
         {
@@ -51,13 +48,8 @@ void GuiChessboard::RenderPieces()
     for (uint8_t i = 0; i < 8; i++)
     {
         for (uint8_t j = 0; j < 8; j++)
-        {
-            Piece *currentPiece;
-            targetBoard->cells[GetCoordinate(i, j)]->GetPieceOnCell(*&currentPiece);
-            if (currentPiece != nullptr)
-            {
-                pieceRenderer->RenderPiece(currentPiece, (Rectangle){static_cast<float>(i * cellSize), static_cast<float>(j * cellSize), static_cast<float>(cellSize), static_cast<float>(cellSize)});
-            }
+        {   
+            pieceRenderer->RenderPiece(static_cast<Piece>(targetBoard->Cells[GetArrayCoordinate(i, j)]), (Rectangle){static_cast<float>(i * cellSize), static_cast<float>((7 - j) * cellSize), static_cast<float>(cellSize), static_cast<float>(cellSize)});
         }
     }
 }
@@ -69,7 +61,7 @@ void GuiChessboard::RenderSelection()
         for (Coordinate coords : possibleMoves)
         {
             // DrawRectangle(coords.X * cellSize, coords.Y * cellSize, cellSize, cellSize, YELLOW);
-            DrawCircle((coords.X * cellSize) + cellSize / 2, (coords.Y * cellSize) + cellSize / 2, cellSize / 10, YELLOW);
+            DrawCircle((coords.X * cellSize) + cellSize / 2, ((7 - coords.Y) * cellSize) + cellSize / 2, cellSize / 10, YELLOW);
         }
     }
 }
@@ -82,15 +74,13 @@ void GuiChessboard::HandleClick(uint8_t x, uint8_t y)
         isSelected = false;
         return;
     }
-
+    
     if (isSelected && targetBoard->IsCellOccupied(selectedCoordinate))
     {
         auto it = std::find(possibleMoves.begin(), possibleMoves.end(), Coordinate{x, y});
         if (it != possibleMoves.end())
         {
-            Cell *fromCell = targetBoard->cells[GetCoordinate(selectedCoordinate)].get();
-            Cell *toCell = targetBoard->cells[GetCoordinate(x, y)].get();
-            targetBoard->MovePiece(fromCell, toCell);
+            targetBoard->MakeMove(selectedCoordinate, Coordinate{x, y});
         }
         isSelected = false;
         return;
@@ -106,16 +96,18 @@ GuiPieceRenderer::GuiPieceRenderer(array<array<Vector2, 6>, 2> imageOffsetVector
     this->imageOffsetVectors = imageOffsetVectors;
 }
 
-void GuiPieceRenderer::RenderPiece(Piece *&piece, Rectangle targetArea)
+void GuiPieceRenderer::RenderPiece(Piece piece, Rectangle targetArea)
 {
-    Vector2 pieceOffset = GetPieceOffset(piece);
-    DrawTexturePro(chessPiecesTexture, (Rectangle){pieceOffset.x, pieceOffset.y, (float)chessPiecesTexture.width / 6, (float)chessPiecesTexture.height / 2}, targetArea, (Vector2){0, 0}, 0, WHITE);
+    if(piece != Piece::NO_PIECE){
+        Vector2 pieceOffset = GetPieceOffset(piece);
+        DrawTexturePro(chessPiecesTexture, (Rectangle){pieceOffset.x, pieceOffset.y, (float)chessPiecesTexture.width / 6, (float)chessPiecesTexture.height / 2}, targetArea, (Vector2){0, 0}, 0, WHITE);
+    }
 }
 
-Vector2 GuiPieceRenderer::GetPieceOffset(Piece *&piece)
-{
-    int X = piece->IsWhite() ? 0 : 1;
-    int Y = static_cast<int>(piece->type) % 8 - 1;
+Vector2 GuiPieceRenderer::GetPieceOffset(Piece& piece)
+{   
+    int X = GetPieceFaction(static_cast<uint8_t>(piece)) == Piece::FWHITE ? 0 : 1;
+    int Y = static_cast<uint8_t>(GetPieceType(static_cast<uint8_t>(piece))) - 1;
     return imageOffsetVectors[X][Y];
 }
 
@@ -132,6 +124,6 @@ void GuiInputManager::Update()
         Vector2 mousePosition = GetMousePosition();
         int mouseX = mousePosition.x;
         int mouseY = mousePosition.y;
-        guiChessboard->HandleClick(mouseX / (boardSize / 8), mouseY / (boardSize / 8));
+        guiChessboard->HandleClick(mouseX / (boardSize / 8), 7 - mouseY / (boardSize / 8));
     }
 }

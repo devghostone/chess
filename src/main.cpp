@@ -3,6 +3,7 @@
 #include "config.h"
 #include "chess-engine.hpp"
 #include "gui.hpp"
+#include "multiplayer.hpp"
 
 #include "raylib.h"
 
