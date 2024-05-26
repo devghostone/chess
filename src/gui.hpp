@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config.h>
 #include "chess-engine.hpp"
 
 #include "raylib.h"

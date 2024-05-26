@@ -1,5 +1,7 @@
 #include "gui.hpp"
 
+Texture chessPiecesTexture;
+
 GuiChessboard::GuiChessboard(Board &board, GuiPieceRenderer &renderer, Color whiteCell, Color blackCell, Color selectionCell, int screenHeight)
     : whiteCell(whiteCell),
       blackCell(blackCell),
@@ -12,13 +14,18 @@ GuiChessboard::GuiChessboard(Board &board, GuiPieceRenderer &renderer, Color whi
 
 void GuiChessboard::RenderBoard()
 {
-    for (uint8_t file = 0; file < 8; file++)
+    //BeginShaderMode(chessBoardShader);
+    //DrawTexturePro(chessPiecesTexture, (Rectangle){0, 0, (float)chessPiecesTexture.width / 6, (float)chessPiecesTexture.height / 2}, Rectangle{0, 0, SCREEN_HEIGHT, SCREEN_HEIGHT}, (Vector2){0, 0}, 0, WHITE);
+    //DrawRectangle(0, 0, SCREEN_HEIGHT, SCREEN_HEIGHT, WHITE);
+    //EndShaderMode();
+    DrawTexture(chessBoardTexture, 0, 0, WHITE);
+    /*for (uint8_t file = 0; file < 8; file++)
     {
         for (uint8_t rank = 0; rank < 8; rank++)
         {
-            DrawRectangle(file * cellSize, (7 - rank) * cellSize, cellSize, cellSize, (file + rank) % 2 == 0 ? whiteCell : blackCell);
+            DrawRectangle(file * cellSize, (7 - rank) * cellSize, cellSize, cellSize, (file + rank) % 2 != 0 ? whiteCell : blackCell);
         }
-    }
+    }*/
     if (isSelected)
     {
         DrawRectangle(selectedCoordinate.X * cellSize, (7 - selectedCoordinate.Y) * cellSize, cellSize, cellSize, selectionCell);
@@ -100,13 +107,20 @@ void GuiPieceRenderer::RenderPiece(Piece piece, Rectangle targetArea)
 {
     if(piece != Piece::NO_PIECE){
         Vector2 pieceOffset = GetPieceOffset(piece);
+
+        BeginShaderMode(chessPieceShader);
+        float value = GetPieceFaction(static_cast<uint8_t>(piece)) == Piece::FWHITE? 1.0: 0.0;
+        SetShaderValue(chessPieceShader, isWhiteLoc, &value, SHADER_UNIFORM_FLOAT);
+        SetShaderValueTexture(chessPieceShader, chessPieceTextureLoc, chessPiecesTexture);
+        SetShaderValue(chessPieceShader, offsetLoc, &pieceOffset, SHADER_UNIFORM_VEC2);
         DrawTexturePro(chessPiecesTexture, (Rectangle){pieceOffset.x, pieceOffset.y, (float)chessPiecesTexture.width / 6, (float)chessPiecesTexture.height / 2}, targetArea, (Vector2){0, 0}, 0, WHITE);
+        EndShaderMode();
     }
 }
 
 Vector2 GuiPieceRenderer::GetPieceOffset(Piece& piece)
 {   
-    int X = GetPieceFaction(static_cast<uint8_t>(piece)) == Piece::FWHITE ? 0 : 1;
+    int X = 0;//GetPieceFaction(static_cast<uint8_t>(piece)) == Piece::FWHITE ? 0 : 1;
     int Y = static_cast<uint8_t>(GetPieceType(static_cast<uint8_t>(piece))) - 1;
     return imageOffsetVectors[X][Y];
 }

@@ -11,9 +11,8 @@ add_library(chess-engine src/chess-engine.cpp)
 add_library(chess-gui src/gui.cpp)
 add_library(chess-multiplayer src/multiplayer.cpp)
 
-
 add_subdirectory(lib/raylib)
-include_directories(src lib/raylib/src)
+include_directories(src lib/raylib/src lib/libdatachannel/include)
 
 target_link_libraries(chess-company raylib chess-engine chess-gui chess-multiplayer)
 file(COPY resources DESTINATION ${CMAKE_BINARY_DIR})
