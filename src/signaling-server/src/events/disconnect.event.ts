@@ -1,7 +1,11 @@
-import { Socket } from 'socket.io';
+import { ws } from '../types/ws';
+import { connectedClient } from '../utils/activeClient';
+import { activeRoom } from '../utils/activeRoom';
 
-export default function event(socket: Socket) {
-    socket.on('disconnect', async () => {
+export default function event(ws: ws) {
+    ws.on('close', async () => {
+        connectedClient.remove(ws.clientId);
+        activeRoom.remove(ws.clientId);
         console.log('User disconnected');
     });
 }

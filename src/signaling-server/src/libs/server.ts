@@ -1,18 +1,10 @@
-import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import cors from 'cors';
+import WebSocket from 'ws';
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+function createServer(port: number) {
+    const wss = new WebSocket.Server({ port: port });
+    return wss;
+}
 
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-    cors: {
-        origin: '*',
-    },
-});
-
-export { app, httpServer, io };
+export const webSocket = {
+    createServer,
+};

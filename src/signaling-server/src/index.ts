@@ -1,8 +1,23 @@
 import 'dotenv/config';
-import { httpServer } from './libs/server';
-import { handleSocketEvents } from './services/socket.service';
+import { webSocket } from './libs/server';
+import { v4 as uuidv4 } from 'uuid';
+import { connectedClient } from './utils/activeClient';
+import { ws } from './types/ws';
+import { loadEvents } from './utils/eventloader.utils';
 
-httpServer.listen(process.env.PORT || 3000, () => {
-    console.log(`Server is running on port ${process.env.PORT || 3000}`);
-    handleSocketEvents();
+const port = process.env.PORT ? +process.env.PORT : 3000;
+const wss = webSocket.createServer(port);
+
+wss.on('connection', (ws: ws) => {
+    ws.clientId = uuidv4();
+    ws.send(
+        JSON.stringify({
+            action: 'socket_connected',
+            data: {
+                uniqueID: ws.clientId,
+            },
+        })
+    );
+    connectedClient.add(ws.clientId, ws);
+    loadEvents(ws);
 });
