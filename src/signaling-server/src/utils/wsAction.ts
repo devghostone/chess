@@ -14,6 +14,11 @@ export function messageAction(ws: ws, action: wsAction) {
 
         case 'get_waiting_room':
             const rooms = activeRoom.getAll();
-            ws.send(JSON.stringify(rooms));
+            ws.send(
+                JSON.stringify({
+                    action: 'waiting_room',
+                    data: rooms,
+                })
+            );
     }
 }
