@@ -1,3 +1,4 @@
+import { sendAnswerSDP } from '../services/sendAnsSDP.service';
 import { emitAction } from '../types/action';
 import { ws } from '../types/ws';
 import { activeRoom } from './activeRoom';
@@ -25,6 +26,10 @@ export function messageAction(ws: ws, action: emitAction) {
                     data: rooms,
                 })
             );
+            break;
+
+        case 'send_answer_sdp':
+            sendAnswerSDP(action.data.clientID, action.data.answerSDP, ws);
             break;
     }
 }

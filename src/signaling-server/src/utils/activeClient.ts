@@ -1,4 +1,5 @@
 import { WebSocket } from 'ws';
+import { ws } from '../types/ws';
 
 (global as any).clients = new Map<string, WebSocket>();
 
@@ -11,8 +12,8 @@ function remove(uniqueId: string) {
 }
 
 function get(uniqueId: string) {
-    const ws = (global as any).clients.get(uniqueId);
-    return ws as WebSocket;
+    const wsClient = (global as any).clients.get(uniqueId);
+    return wsClient as ws;
 }
 
 function getAll() {
