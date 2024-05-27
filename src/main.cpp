@@ -4,6 +4,7 @@
 #include "config.h"
 #include "chess-engine.hpp"
 #include "gui.hpp"
+#include "menu.hpp"
 #include "multiplayer.hpp"
 
 #include "raylib.h"
@@ -79,17 +80,20 @@ int main(){
     GuiPieceRenderer renderer = GuiPieceRenderer({GetWhitePieces(), GetBlackPieces()}, CHESS_PIECE_SVG, SVG_RES_X, SVG_RES_Y);
     GuiChessboard boardGui = GuiChessboard(board, renderer, WHITE_SPACE_COLOR, BLACK_SPACE_COLOR, SELECTION_SPACE_COLOR, SCREEN_HEIGHT);
     GuiInputManager inputManager = GuiInputManager(boardGui, SCREEN_HEIGHT);
+    Menu menu = Menu(static_cast<int>(SCREEN_HEIGHT), 0, static_cast<int>(SCREEN_WIDTH - SCREEN_HEIGHT), static_cast<int>(SCREEN_HEIGHT), FONT_PATH);
     SocketClient client = SocketClient("ws://localhost:3000");
     client.CreateClient();
 
     while(!WindowShouldClose()){
         inputManager.Update();
-        
+        menu.UpdateMenu();
+
         BeginDrawing();
-        ClearBackground(BACKGROUND_COLOR);
+        ClearBackground(BLACK_SPACE_COLOR);
         boardGui.RenderBoard();
         boardGui.RenderPieces();
         boardGui.RenderSelection();
+        menu.DrawWelcomeScreen();
 
         EndDrawing();
     }

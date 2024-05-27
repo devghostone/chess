@@ -6,12 +6,20 @@ SocketClient::SocketClient(string url){
     wsFuture = wsPromise.get_future();
 
     ws->onOpen([this](){
-        std::cout << "Web Socket connected!" << std::endl;
+        std::cout << "Connected to Web Socket Server" << std::endl;
         this->wsPromise.set_value();
     });
 
     ws->onMessage([this](std::variant<rtc::binary, rtc::string> message){
         std::cout << std::get<rtc::string>(message) << std::endl;
+    });
+
+    ws->onClosed([this](){
+        std::cout << "Web Socket Connection has been closed" << std::endl;
+    });
+
+    ws->onError([](string error){
+        std::cout <<"Connection to socket server failed. Error: " << error << std::endl;
     });
 }
 

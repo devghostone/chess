@@ -10,3 +10,6 @@
 [submodule "lib/datachannel-wasm"]
 	path = lib/datachannel-wasm
 	url = https://github.com/paullouisageneau/datachannel-wasm.git
+[submodule "lib/raylib-nuklear"]
+	path = lib/raylib-nuklear
+	url = https://github.com/RobLoach/raylib-nuklear
