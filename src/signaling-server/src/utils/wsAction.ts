@@ -10,6 +10,7 @@ export function messageAction(ws: ws, action: emitAction) {
 
         case 'create_waiting_room':
             activeRoom.add(ws.clientId, ws.username, action.data.offerSDP);
+            console.log(activeRoom.getAll());
             break;
 
         case 'remove_waiting_room':

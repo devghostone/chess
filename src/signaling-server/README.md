@@ -14,9 +14,11 @@ There are two types of actions to consider when implementing the signaling from 
 | -------------- | ---------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 |                | socket_connected | `{ action: 'socket_connected', data: { uniqueID: ws.clientId } }`                      | This action will fire immediately after the client successfully connects to the socket.                                              |
 |                | waiting_room     | `{ action: 'waiting_room', data: [{ uniqueId: 'unique_id', offerSDP: 'offer_sdp' }] }` | This action will provide information about waiting rooms. It will be triggered after the client emits the 'get_waiting_room' action. |
+|                | active_count     | `{ action: 'active_count', data: { count: active_count } }`                            | This action will fire immediately after a new client successfully connects or disconnects.                                           |
 
-| EmitActions | actionName          | payloadData                                                   |
-| ----------- | ------------------- | ------------------------------------------------------------- |
-|             | create_waiting_room | `{ action: 'create_waiting_room', data: { offerSDP: 'gg' } }` |
-|             | remove_waiting_room | `{ action: 'remove_waiting_room', data: null }`               |
-|             | get_waiting_room    | `{ action: 'get_waiting_room', data: null }`                  |
+| EmitActions | actionName          | payloadData                                                     |
+| ----------- | ------------------- | --------------------------------------------------------------- |
+|             | create_waiting_room | `{ action: 'create_waiting_room', data: { offerSDP: 'gg' } }`   |
+|             | remove_waiting_room | `{ action: 'remove_waiting_room', data: null }`                 |
+|             | get_waiting_room    | `{ action: 'get_waiting_room', data: null }`                    |
+|             | create_username     | `{ action: 'create_username', data: { username: 'username' } }` |

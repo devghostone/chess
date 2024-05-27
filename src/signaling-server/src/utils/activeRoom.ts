@@ -4,6 +4,7 @@
 >();
 
 function add(uniqueId: string, username: string, offerSDP: string) {
+    if ((global as any).rooms.get(uniqueId)) return;
     (global as any).rooms.set(uniqueId, {
         username,
         offerSDP,
