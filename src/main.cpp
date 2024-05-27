@@ -79,6 +79,8 @@ int main(){
     GuiPieceRenderer renderer = GuiPieceRenderer({GetWhitePieces(), GetBlackPieces()}, CHESS_PIECE_SVG, SVG_RES_X, SVG_RES_Y);
     GuiChessboard boardGui = GuiChessboard(board, renderer, WHITE_SPACE_COLOR, BLACK_SPACE_COLOR, SELECTION_SPACE_COLOR, SCREEN_HEIGHT);
     GuiInputManager inputManager = GuiInputManager(boardGui, SCREEN_HEIGHT);
+    SocketClient client = SocketClient("ws://localhost:3000");
+    client.CreateClient();
 
     while(!WindowShouldClose()){
         inputManager.Update();
