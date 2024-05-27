@@ -18,6 +18,18 @@
 #define SVG_RES_X 1350
 #define SVG_RES_Y 450
 
+#define SEND_DISPLAY_NAME "create_username"
+#define SEND_CREATE_WAITING_ROOM "create_waiting_room"
+#define SEND_REMOVE_WAITING_ROOM "remove_waiting_room"
+#define SEND_GET_WAITING_ROOM "get_waiting_room"
+#define SEND_SEND_ANSWER_SDP "send_answer_sdp"
+#define SEND_ICE_CANDIDATE "send_ice_candidate"
+
+#define RECEIVE_SOCKET_CONNECTED "socket_connected"
+#define RECEIVE_WAITING_ROOM "waiting_room"
+#define RECEIVE_ANSWER_SDP_RECEIVED "answer_sdp_received"
+#define RECEIVE_ICE_CANDIDATE "receive_ice_candidate"
+
 extern Texture chessPiecesTexture;
 extern Texture chessBoardTexture;
 extern Shader chessPieceShader;
@@ -25,5 +37,14 @@ extern Shader chessBoardShader;
 extern int isWhiteLoc;
 extern int chessPieceTextureLoc;
 extern int offsetLoc;
+
+enum GAME_STATE{
+    NOT_CONNECTED,
+    CONNECTED_NAME_NOT_SET,
+    CONNECTED,
+    EXCHANGING_INFORMATION,
+    IN_GAME,
+    LOADING
+};
 
 #endif

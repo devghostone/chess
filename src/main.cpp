@@ -40,6 +40,10 @@ array<Vector2, 6> GetBlackPieces(){
 }
 
 int main(){
+    #ifndef __EMSCRIPTEN__
+    //rtc::InitLogger(rtc::LogLevel::Verbose);
+    #endif
+    SetConfigFlags(FLAG_BORDERLESS_WINDOWED_MODE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, APP_NAME);
     SetTargetFPS(30);
 
@@ -80,21 +84,40 @@ int main(){
     GuiPieceRenderer renderer = GuiPieceRenderer({GetWhitePieces(), GetBlackPieces()}, CHESS_PIECE_SVG, SVG_RES_X, SVG_RES_Y);
     GuiChessboard boardGui = GuiChessboard(board, renderer, WHITE_SPACE_COLOR, BLACK_SPACE_COLOR, SELECTION_SPACE_COLOR, SCREEN_HEIGHT);
     GuiInputManager inputManager = GuiInputManager(boardGui, SCREEN_HEIGHT);
-    Menu menu = Menu(static_cast<int>(SCREEN_HEIGHT), 0, static_cast<int>(SCREEN_WIDTH - SCREEN_HEIGHT), static_cast<int>(SCREEN_HEIGHT), FONT_PATH);
-    SocketClient client = SocketClient("ws://localhost:3000");
-    client.CreateClient();
+   
+    SocketClient client = SocketClient("ws://10.147.20.193:4040");
+    rtc::Configuration config;
+    config.iceServers.emplace_back("stun:stun.l.google.com:19302");
+    RtcClient rtcClient = RtcClient(config);
+
+    Menu menu = Menu(static_cast<int>(SCREEN_HEIGHT), 0, static_cast<int>(SCREEN_WIDTH - SCREEN_HEIGHT), static_cast<int>(SCREEN_HEIGHT), FONT_PATH, client, rtcClient);
+    client.CreateClient(
+    [&menu](){
+        menu.SetState(LOADING);
+    },
+    [&menu](){
+        menu.SetState(CONNECTED_NAME_NOT_SET);
+    });
+
+    /*auto connection = std::make_shared<rtc::PeerConnection>(config);
+    cout << "started peer connection" << std::endl;
+    connection->onLocalDescription([](rtc::Description sdp)
+                                  { std::cout << sdp << std::endl; });
+
+    connection->createDataChannel("gg");*/
+    //connection->setLocalDescription(rtc::Description::Type::Offer);
 
     while(!WindowShouldClose()){
         inputManager.Update();
-        menu.UpdateMenu();
+        menu.Update();
 
         BeginDrawing();
         ClearBackground(BLACK_SPACE_COLOR);
         boardGui.RenderBoard();
         boardGui.RenderPieces();
         boardGui.RenderSelection();
-        menu.DrawWelcomeScreen();
-
+        
+        menu.Draw();
         EndDrawing();
     }
     CloseWindow();

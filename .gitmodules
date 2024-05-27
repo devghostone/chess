@@ -13,3 +13,6 @@
 [submodule "lib/raylib-nuklear"]
 	path = lib/raylib-nuklear
 	url = https://github.com/RobLoach/raylib-nuklear
+[submodule "lib/json"]
+	path = lib/json
+	url = https://github.com/nlohmann/json.git
