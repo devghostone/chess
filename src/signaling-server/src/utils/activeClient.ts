@@ -15,8 +15,23 @@ function get(uniqueId: string) {
     return ws as WebSocket;
 }
 
+function getAll() {
+    const allEntries: IterableIterator<[string, WebSocket]> = (
+        global as any
+    ).clients.entries();
+    const entriesArray: {
+        uniqueId: string;
+        ws: WebSocket;
+    }[] = Array.from(allEntries).map(([key, value]) => ({
+        uniqueId: key,
+        ws: value,
+    }));
+    return entriesArray;
+}
+
 export const connectedClient = {
     add,
     remove,
     get,
+    getAll,
 };
