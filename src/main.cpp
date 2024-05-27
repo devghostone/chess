@@ -87,7 +87,7 @@ int main(){
    
     SocketClient client = SocketClient("ws://10.147.20.193:4040");
     rtc::Configuration config;
-    config.iceServers.emplace_back("stun:stun.l.google.com:19302");
+    config.iceServers.emplace_back("stun:stun1.l.google.com:19302");
     RtcClient rtcClient = RtcClient(config);
 
     Menu menu = Menu(static_cast<int>(SCREEN_HEIGHT), 0, static_cast<int>(SCREEN_WIDTH - SCREEN_HEIGHT), static_cast<int>(SCREEN_HEIGHT), FONT_PATH, client, rtcClient);

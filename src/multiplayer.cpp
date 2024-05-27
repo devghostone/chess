@@ -69,6 +69,7 @@ RtcClient::RtcClient(Configuration config)
 
     connection->onLocalDescription([&](rtc::Description sdp){ 
         for(auto func: this->callbackFunctions["onLocalDescription"]){
+            std::cout << "Create Local Description" << std::endl;
             func();
         }
     });
@@ -90,14 +91,16 @@ RtcClient::RtcClient(Configuration config)
             func();
         }
     });
+
+    callbackFunctions = std::map<string, vector<function<void()>>>();
 }
 
 void RtcClient::AddCallback(string eventName, function<void()> callbackFunction){
-    this->callbackFunctions[eventName].push_back(callbackFunction);
+    callbackFunctions[eventName].push_back(callbackFunction);
 }
 
 void RtcClient::RemoveCallbacks(string eventName){
-    this->callbackFunctions[eventName].erase(this->callbackFunctions[eventName].begin(), this->callbackFunctions[eventName].end());
+    callbackFunctions[eventName].erase(this->callbackFunctions[eventName].begin(), this->callbackFunctions[eventName].end());
 }
 
 void RtcClient::RemoveCallbackAtIndex(int index){

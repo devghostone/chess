@@ -117,11 +117,11 @@ public:
             }
         });
 
-        client.AddCallback(RECEIVE_ANSWER_SDP_RECEIVED, [&](string message){
+        /*client.AddCallback(RECEIVE_ANSWER_SDP_RECEIVED, [&](string message){
             std::cout << "setting answer sdp";
             json j = json::parse(message);
             rtcClient.SetRemoteDescription(rtc::Description(unescape_string(j["answerSDP"]), rtc::Description::Type::Answer));
-        });
+        });*/
 
         ctx->style.window.fixed_background.data.color = nk_color{WHITE_PIECE_COLOR.r, WHITE_PIECE_COLOR.g, WHITE_PIECE_COLOR.b, 0};
         ctx->style.window.padding = nk_vec2(0, 0);
@@ -259,8 +259,8 @@ public:
             if(nk_button_label(ctx, "+")){
                 currentState = LOADING;
                 loadingText = "Generating RTC Description";
-                rtcClient->CreateDataChannel();
                 rtcClient->AddCallback("onLocalDescription", [&](){
+                    std::cout << "haha"<< std::endl;
                     map<string, string> createRoomMap = map<string, string>();
                     std::optional<rtc::Description> localDescriptionOptional = this->rtcClient->connection->localDescription();
                     if(localDescriptionOptional.has_value()){
@@ -270,6 +270,8 @@ public:
                     }
                     rtcClient->RemoveCallbacks("onLocalDescription");
                 });
+                rtcClient->CreateDataChannel();
+                //std::cout << rtcClient->callbackFunctions["onLocalDescription"].size() << std::endl;
             }
             nk_layout_row_push(ctx, 0.2f);
             if(nk_button_label(ctx, "\xE2\x9F\xB3")){

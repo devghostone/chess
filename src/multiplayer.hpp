@@ -32,10 +32,9 @@ class SocketClient{
 
 class RtcClient{
 
-    std::map<string, vector<function<void()>>> callbackFunctions;
-
     public:
         std::shared_ptr<rtc::PeerConnection> connection;
+        std::map<string, vector<function<void()>>> callbackFunctions;
 
         RtcClient(rtc::Configuration config);
         void CreateDataChannel();
