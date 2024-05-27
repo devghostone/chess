@@ -34,14 +34,17 @@ class RtcClient{
 
     public:
         std::shared_ptr<rtc::PeerConnection> connection;
+        std::shared_ptr<rtc::DataChannel> channel;
+
         std::map<string, vector<function<void()>>> callbackFunctions;
+        std::function<void(string, string)> candidateGenerated;
 
         RtcClient(rtc::Configuration config);
         void CreateDataChannel();
         void SetRemoteDescription(rtc::Description description);
         void AddCallback(string eventName, function<void()> callbackFunction);
         void RemoveCallbacks(string eventName);
-        void RemoveCallbackAtIndex(int index);
+        void RemoveCallbackAtIndex(string eventName, int index);
 };
 
 #endif

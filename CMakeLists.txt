@@ -12,7 +12,7 @@ add_library(chess-gui src/gui.cpp)
 add_library(chess-multiplayer src/multiplayer.cpp)
 
 if(EMSCRIPTEN)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s ERROR_ON_UNDEFINED_SYMBOLS=0 -sALLOW_MEMORY_GROWTH --bind --memory")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s ERROR_ON_UNDEFINED_SYMBOLS=0 -sALLOW_MEMORY_GROWTH -sEXPORTED_RUNTIME_METHODS=printErr --bind --memory")
     set(CMAKE_EXECUTABLE_SUFFIX ".html") # This line is used to set your executable to build with the emscripten html template so that you can directly open it.
     include_directories(lib/json/single_include lib/raylib-nuklear/include src lib/raylib/src lib/datachannel-wasm/wasm/include)
     add_subdirectory(lib/datachannel-wasm EXCLUDE_FROM_ALL)

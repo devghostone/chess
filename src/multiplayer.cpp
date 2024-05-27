@@ -78,11 +78,34 @@ RtcClient::RtcClient(Configuration config)
         for(auto func: this->callbackFunctions["onLocalCandidate"]){
             func();
         }
+        this->candidateGenerated(candidate.candidate(), candidate.mid());
+        std::cout << "Candidate: " << candidate.candidate() << ", Mid: " << candidate.mid() << std::endl;
     });
+
 
     connection->onStateChange([&](rtc::PeerConnection::State state){
         for(auto func: this->callbackFunctions["onStateChange"]){
             func();
+        }
+        switch(state){
+            case rtc::PeerConnection::State::Closed:
+                std::cout << "Connection Closed" << std::endl;
+                break;
+            case rtc::PeerConnection::State::Connected:
+                std::cout << "WebRTC Connection Established!" << std::endl;
+                break;
+            case rtc::PeerConnection::State::Connecting:
+                std::cout << "WebRTC Connecting..." << std::endl;
+                break;
+            case rtc::PeerConnection::State::Disconnected:
+                std::cout << "WebRTC Disconnected" << std::endl;
+                break;
+            case rtc::PeerConnection::State::Failed:
+                std::cout << "WebRTC Failed" << std::endl;
+                break;
+            case rtc::PeerConnection::State::New:
+                std::cout << "New Failed" << std::endl;
+                break;
         }
     });
 
@@ -90,6 +113,16 @@ RtcClient::RtcClient(Configuration config)
         for(auto func: this->callbackFunctions["onGatheringStateChange"]){
             func();
         }
+    });
+
+    connection->onDataChannel([&](shared_ptr<rtc::DataChannel> dc){
+        channel = std::move(dc);
+        channel->onOpen([](){
+            std::cout << "Data Channel Established!";
+        });
+        channel->onMessage([](auto data){
+            std::cout << "Message Received Here :eyes:" << std::endl;
+        });
     });
 
     callbackFunctions = std::map<string, vector<function<void()>>>();
@@ -103,12 +136,20 @@ void RtcClient::RemoveCallbacks(string eventName){
     callbackFunctions[eventName].erase(this->callbackFunctions[eventName].begin(), this->callbackFunctions[eventName].end());
 }
 
-void RtcClient::RemoveCallbackAtIndex(int index){
-    
+void RtcClient::RemoveCallbackAtIndex(string eventName, int index){
+    callbackFunctions[eventName].erase(std::next(callbackFunctions[eventName].begin() + index));
 }
 
 void RtcClient::CreateDataChannel(){
-    connection->createDataChannel("Main");
+    channel = connection->createDataChannel("Main");
+
+    channel->onOpen([](){
+        std::cout << "Data Channel Established!";
+    });
+
+    channel->onMessage([](auto data){
+        std::cout << "Message Received Here :eyes:" << std::endl;
+    });
 }
 
 void RtcClient::SetRemoteDescription(rtc::Description description){

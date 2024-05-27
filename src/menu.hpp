@@ -91,6 +91,7 @@ class Menu
 
     string loadingText = "Loading";
     std::vector<Room> RoomList;
+    string targetClient = "";
 
 public:
     Menu(int screenPosX, int screenPosY, int width, int height, string fontPath, SocketClient& client, RtcClient& rtcClient)
@@ -117,11 +118,30 @@ public:
             }
         });
 
-        /*client.AddCallback(RECEIVE_ANSWER_SDP_RECEIVED, [&](string message){
-            std::cout << "setting answer sdp";
+        client.AddCallback(RECEIVE_ICE_CANDIDATE, [&](string message){
+            std::cout << "Ice Candidate!" << std::endl;
+            json candidate = json::parse(message);
+            this->rtcClient->connection->addRemoteCandidate(rtc::Candidate(unescape_string(candidate["candidate"]), unescape_string(candidate["mid"])));
+        });
+
+        rtcClient.candidateGenerated = [&](string candidateString, string midString){
+            map<string, string> iceSendMap;
+            if(this->targetClient.length() > 0){
+                std::cout << "Sending Local Candidate over the network..." << std::endl;
+                iceSendMap["clientId"] = this->targetClient;
+                iceSendMap["candidate"] = candidateString;
+                iceSendMap["mid"] = midString;
+                this->client->SendMessage(SEND_ICE_CANDIDATE, iceSendMap);
+                std::cout << "Sending ICE Candidate to " << this->targetClient << std::endl;
+            }
+        };
+
+        client.AddCallback(RECEIVE_ANSWER_SDP_RECEIVED, [&](string message){
             json j = json::parse(message);
             rtcClient.SetRemoteDescription(rtc::Description(unescape_string(j["answerSDP"]), rtc::Description::Type::Answer));
-        });*/
+            this->targetClient = j["clientId"];
+            std::cout << "Answer SDP received from: " << j["username"] << std::endl;
+        });
 
         ctx->style.window.fixed_background.data.color = nk_color{WHITE_PIECE_COLOR.r, WHITE_PIECE_COLOR.g, WHITE_PIECE_COLOR.b, 0};
         ctx->style.window.padding = nk_vec2(0, 0);
@@ -260,7 +280,6 @@ public:
                 currentState = LOADING;
                 loadingText = "Generating RTC Description";
                 rtcClient->AddCallback("onLocalDescription", [&](){
-                    std::cout << "haha"<< std::endl;
                     map<string, string> createRoomMap = map<string, string>();
                     std::optional<rtc::Description> localDescriptionOptional = this->rtcClient->connection->localDescription();
                     if(localDescriptionOptional.has_value()){
@@ -295,11 +314,11 @@ public:
                             currentState = LOADING;
                             loadingText = "setting remote description locally"; 
                             std::cout << loadingText << std::endl;
+                            this->targetClient = room.uniqueId;
                             rtcClient->SetRemoteDescription(rtc::Description(unescape_string(room.offerSDP), rtc::Description::Type::Offer));
                             rtcClient->AddCallback("onLocalCandidate", [&](){
                                 std::map<string, string> answer;
-                                answer["clientID"] = room.uniqueId;
-                                std::cout << "Joining Room Description " << std::endl;
+                                answer["clientId"] = room.uniqueId;
                                 std::optional<rtc::Description> localDescriptionOptional = this->rtcClient->connection->localDescription();
                                 if(localDescriptionOptional.has_value()){
                                     answer["answerSDP"] = localDescriptionOptional.value();
@@ -385,6 +404,12 @@ public:
     void Update()
     {
         UpdateNuklear(ctx);
+        if(IsKeyPressed(KEY_ENTER)){
+            //send message here
+            if(rtcClient->channel != nullptr){
+                rtcClient->channel->send("");
+            }
+        }
     }
 
     void Draw(){
