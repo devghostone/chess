@@ -1,6 +1,8 @@
 import { sendAnswerSDP } from '../services/sendAnsSDP.service';
+import { sendICE } from '../services/sendICE.service';
 import { emitAction } from '../types/action';
 import { ws } from '../types/ws';
+import { connectedClient } from './activeClient';
 import { activeRoom } from './activeRoom';
 
 export function messageAction(ws: ws, action: emitAction) {
@@ -29,7 +31,18 @@ export function messageAction(ws: ws, action: emitAction) {
             break;
 
         case 'send_answer_sdp':
-            sendAnswerSDP(action.data.clientID, action.data.answerSDP, ws);
+            console.log('sending_ans_sdp');
+            sendAnswerSDP(action.data.clientId, action.data.answerSDP, ws);
+            break;
+
+        case 'send_ice':
+            console.log('sending_ice');
+            sendICE(
+                action.data.clientId,
+                action.data.candidate,
+                action.data.mid,
+                ws
+            );
             break;
     }
 }

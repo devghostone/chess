@@ -4,6 +4,7 @@ export interface emitAction {
         | 'create_waiting_room'
         | 'remove_waiting_room'
         | 'get_waiting_room'
-        | 'send_answer_sdp';
+        | 'send_answer_sdp'
+        | 'send_ice';
     data: any;
 }
