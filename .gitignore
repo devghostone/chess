@@ -1,0 +1,7 @@
+zig-cache
+web
+src
+resources
+lib
+build
+.vscode
