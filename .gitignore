@@ -3,3 +3,5 @@ build/
 web/
 zig-cache/
 zig-out/
+node_modules/
+.next/

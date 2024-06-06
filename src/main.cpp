@@ -85,7 +85,7 @@ int main(){
     GuiChessboard boardGui = GuiChessboard(board, renderer, WHITE_SPACE_COLOR, BLACK_SPACE_COLOR, SELECTION_SPACE_COLOR, SCREEN_HEIGHT);
     GuiInputManager inputManager = GuiInputManager(boardGui, SCREEN_HEIGHT);
    
-    SocketClient client = SocketClient("wss://47612dc8b9af19f8e65d63879ea15189.serveo.net");
+    SocketClient client = SocketClient("wss://chess-company-api.htetaung.com");
     rtc::Configuration config;
     config.iceServers.emplace_back("stun:stun.l.google.com:19302");
     //config.iceServers.emplace_back("stun:stun.l.google.com:5349");
